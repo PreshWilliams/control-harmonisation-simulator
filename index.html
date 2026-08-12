@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Control Harmonisation Simulator</title>
+  <meta name="description" content="An interactive model of control harmonisation across jurisdictions. Developed by Presh Williams." />
+  <style>
+    html, body { margin: 0; padding: 0; background: #E9E5DC; }
+    #boot {
+      font-family: "IBM Plex Mono", ui-monospace, Menlo, Consolas, monospace;
+      font-size: 13px; color: #5A6472; padding: 28px 24px;
+    }
+    #boot strong { color: #1B2430; }
+  </style>
+  <script type="importmap">
+  {
+    "imports": {
+      "react": "https://esm.sh/react@18.3.1",
+      "react-dom/client": "https://esm.sh/react-dom@18.3.1/client",
+      "d3": "https://esm.sh/d3@7.9.0"
+    }
+  }
+  </script>
+  <script src="https://unpkg.com/@babel/standalone@7.24.7/babel.min.js"></script>
+</head>
+<body>
+  <div id="root">
+    <div id="boot"><strong>Control Harmonisation Simulator</strong><br />Loading the artefact and transforming it in the browser. This takes a moment on first visit.</div>
+  </div>
+  <noscript>
+    <div id="boot">This tool needs JavaScript enabled to run.</div>
+  </noscript>
+  <script type="module">
+    const boot = document.getElementById("boot");
+    const fail = (msg) => { if (boot) boot.innerHTML = "<strong>Could not start.</strong><br />" + msg; };
+    try {
+      const res = await fetch("./control-harmonisation-simulator.jsx");
+      if (!res.ok) throw new Error("Fetch failed with status " + res.status + ". Serve this folder over HTTP (GitHub Pages or a local server); opening the file directly from disk will not work.");
+      const source = await res.text();
+      const { code } = Babel.transform(source, {
+        presets: [["react", { runtime: "classic" }]],
+        filename: "control-harmonisation-simulator.jsx",
+      });
+      const moduleUrl = URL.createObjectURL(new Blob([code], { type: "text/javascript" }));
+      const [{ default: App }, React, { createRoot }] = await Promise.all([
+        import(moduleUrl),
+        import("react"),
+        import("react-dom/client"),
+      ]);
+      createRoot(document.getElementById("root")).render(React.createElement(App));
+    } catch (err) {
+      console.error(err);
+      fail(String(err && err.message ? err.message : err));
+    }
+  </script>
+</body>
+</html>
