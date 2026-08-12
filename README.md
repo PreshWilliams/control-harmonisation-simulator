@@ -126,5 +126,3 @@ Data invariants are enforced rather than assumed. Every option ladder is monoton
 All data in this tool is authored and illustrative. Scores are a model, not an audit. Scenarios are not statements about any organisation's internal programme. Items marked verify must be checked against primary sources before being relied on.
 
 Regulatory content is representative rather than exhaustive, and accuracy was preferred over coverage. References use plain instrument names; registration numbers, licence numbers and article numbers are not asserted where they could not be confirmed. Evidence weights are authored judgement rather than a clause-level crosswalk: the model asserts that an option helps evidence an obligation, not which specific article it satisfies.
-
-No licence file is included. Add one before inviting reuse.
