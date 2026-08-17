@@ -6,10 +6,11 @@ import * as d3 from "d3";
    A drafting-plate style tool exploring one question: how far should a
    group harmonise its control set across jurisdictions before local
    obligations legitimately force variation?
-   Five views: territory selection (tile and projection maps), exposure
+   Six views: territory selection (tile and projection maps), exposure
    mapping, control selection with a two-axis compliance score,
-   harmonisation against an efficient band, and change impact diffs
-   including prospective-market entry.
+   harmonisation against an efficient band, change impact diffs
+   including prospective-market entry, and engineer-facing control
+   design output on an illustrative reference stack.
    All data is authored and illustrative. Items marked verify must be
    checked against primary sources before being relied on.
 ------------------------------------------------------------------ */
@@ -687,6 +688,236 @@ const CHANGE_SCENARIOS = [
     mods: [{ o: "ukNis", delta: 1 }],
   },
 ];
+
+/* --------------------------- control design -------------------------
+   Engineer-facing guardrail content per control: the policy-as-code
+   intent, enforcement points on an illustrative reference stack, and
+   the evidence artefact each guardrail emits. The stack named here is
+   representative for demonstration, not a statement about any
+   organisation's environment.
+------------------------------------------------------------------- */
+
+const REFERENCE_STACK = "AWS (Organizations, IAM Identity Center, Config, CloudTrail, S3), Cloudflare, GitHub with CI, Kubernetes, Terraform with OPA policy checks, an identity provider, a SIEM, and a payment service provider";
+
+const POSTURES = ["Documented expectation", "Detective: monitored and alerted on", "Preventive: enforced at the control plane", "Automated: enforced with evidence emitted by the pipeline"];
+
+const EVIDENCE_MODES = ["captured as a self-declared attestation", "captured in periodic self-assessment records", "captured with internal test results retained", "exported as audit artefacts and independently assured"];
+
+const CONTROL_DESIGN = {
+  access_life: {
+    intent: "No account exists outside the identity provider; joiner, mover and leaver events drive access automatically.",
+    enforce: ["Identity provider as the single source of truth, with SCIM provisioning into AWS IAM Identity Center", "HR-system webhook triggers deprovisioning on leaver events", "AWS Config rule flags IAM users created outside federation"],
+    evidence: "Provisioning and deprovisioning event log, exported on a fixed cadence",
+  },
+  access_priv: {
+    intent: "No standing privileged access; elevation is just-in-time, time-boxed and logged.",
+    enforce: ["IAM Identity Center permission sets with short session lifetimes", "Service control policy denies long-lived access keys on privileged roles", "Vault-brokered credentials with automatic rotation", "CloudTrail alerting on out-of-band administrative actions"],
+    evidence: "Elevation request and approval records tied to session logs",
+  },
+  access_recert: {
+    intent: "Every entitlement is re-attested on a fixed cadence; unreviewed access expires by default.",
+    enforce: ["Access review campaigns in the identity provider with auto-revoke on no response", "Group membership managed in Terraform so reviews diff against code", "AWS Config reports drift between declared and actual IAM policy"],
+    evidence: "Signed campaign completion report per review cycle",
+  },
+  log_collect: {
+    intent: "Every production system ships logs to central immutable storage with a defined retention.",
+    enforce: ["Organisation-wide CloudTrail into a locked S3 bucket with Object Lock", "Cluster baseline includes the log-shipping agent, so coverage is not optional", "AWS Config rule flags accounts without trail coverage"],
+    evidence: "Coverage report of accounts and clusters shipping against the known estate",
+  },
+  log_detect: {
+    intent: "Detection rules cover the agreed threat scenarios and page a human when they fire.",
+    enforce: ["SIEM detection rules held as code in version control", "GuardDuty and Security Hub findings routed to on-call", "Cloudflare WAF managed rules in blocking mode at the edge"],
+    evidence: "Detection coverage matrix plus alert-to-response timestamps",
+  },
+  log_ops: {
+    intent: "Alerts are triaged within agreed service levels with documented outcomes.",
+    enforce: ["On-call rota with paging integration", "Case workflow records disposition codes per alert", "Weekly tuning review retires noisy rules"],
+    evidence: "Triage timestamps and disposition records",
+  },
+  chg_flow: {
+    intent: "No production change lands without a reviewed, approved and linked change record.",
+    enforce: ["GitHub branch protection: required reviews and passing status checks", "CODEOWNERS routes approvals by risk tier", "Pipeline blocks merges without a linked change ticket"],
+    evidence: "The merged pull request, with approvals, is the change record",
+  },
+  chg_env: {
+    intent: "Production is segregated and no human deploys to it by hand.",
+    enforce: ["Separate AWS accounts per environment under Organizations", "Service control policy denies console write access in production", "The deployment role is assumable only by the pipeline"],
+    evidence: "Account map and deny-policy attestations",
+  },
+  chg_pipe: {
+    intent: "The pipeline is the only path to production and enforces policy before apply.",
+    enforce: ["Terraform plans gated by OPA policy checks in CI", "Signed artefacts with provenance attestation", "Kubernetes admission control rejects unsigned images"],
+    evidence: "Pipeline run logs with policy results attached to every release",
+    snippet: ["# Illustrative: policy check over a Terraform plan in CI", "package terraform.guardrails", "", "deny[msg] {", "  r := input.resource_changes[_]", "  r.type == \"aws_s3_bucket\"", "  not r.change.after.tags.data_class", "  msg := sprintf(\"%s: bucket missing data_class tag\", [r.address])", "}"].join("\n"),
+  },
+  sup_dd: {
+    intent: "No supplier processes group data before an assessment proportionate to its tier.",
+    enforce: ["Procurement workflow blocks contract signature without a completed security review", "Standard data processing terms with transfer clauses in templates", "Tier assignment recorded in the supplier register at onboarding"],
+    evidence: "Completed assessment linked to the supplier record",
+  },
+  sup_mon: {
+    intent: "Critical suppliers are monitored continuously and concentration is measured, not assumed.",
+    enforce: ["Attack-surface monitoring on critical supplier estates", "Register dates trigger reassessment automatically", "Concentration reporting by service category and provider"],
+    evidence: "Monitoring findings and reassessment records",
+  },
+  sup_exit: {
+    intent: "Every critical arrangement has a maintained register entry and an exit that has been tested.",
+    enforce: ["Register of information held as structured data, exportable in regulator format", "Exit and audit clauses in standard contractual terms", "Annual exit exercise on one critical arrangement"],
+    evidence: "Register export plus the exit test report",
+  },
+  inc_ready: {
+    intent: "Response roles, playbooks and communication paths are defined and exercised, not discovered mid-incident.",
+    enforce: ["Playbooks in version control with named owners", "Annual cross-functional exercise with tracked actions", "Paging path tested on a fixed cadence"],
+    evidence: "Exercise reports with lessons and closure status",
+  },
+  inc_notify: {
+    intent: "Every notification regime in scope is mapped to a clock that starts at detection.",
+    enforce: ["Notification matrix held as structured data per territory", "Case workflow starts the regulatory clocks automatically at triage", "Pre-approved regulator communication templates per regime"],
+    evidence: "Notification decision log with timestamps per incident",
+  },
+  inc_crisis: {
+    intent: "Severe incidents escalate into an exercised crisis structure with decision authority.",
+    enforce: ["Severity thresholds trigger crisis roles automatically", "Board-level exercise on a severe-but-plausible scenario", "Out-of-band communication channel maintained and tested"],
+    evidence: "Crisis exercise report and the decision log",
+  },
+  dp_records: {
+    intent: "Processing exists only if recorded; high-risk processing proceeds only after assessment.",
+    enforce: ["Record of processing held as structured data linked to the data inventory", "Impact assessment gate in the product intake workflow", "Privacy review required as a repository label where relevant"],
+    evidence: "Current record of processing export and the assessment register",
+  },
+  dp_rights: {
+    intent: "Subject requests run against statutory deadlines with identity checks before disclosure.",
+    enforce: ["Rights request tooling with per-regime deadline clocks", "Identity verification step ahead of any disclosure", "Fulfilment tasks generated against data inventory locations"],
+    evidence: "Request log with timestamps and outcomes",
+  },
+  dp_lawful: {
+    intent: "Every purpose has a documented basis per market; consent is captured once and honoured everywhere.",
+    enforce: ["Purpose register keyed by territory", "Consent management platform serves per-market notice versions", "Marketing sends gated on live consent state"],
+    evidence: "Purpose register plus a consent state audit sample",
+  },
+  ret_sched: {
+    intent: "Every data category has a retention period per territory, and storage enforces it rather than trusting process.",
+    enforce: ["Retention schedule held as structured data keyed by territory and category", "S3 lifecycle rules generated from the schedule, not written by hand", "Database expiry jobs reference the same schedule source"],
+    evidence: "Schedule export and the lifecycle configuration diff against it",
+    snippet: ["# Illustrative: the schedule rendered into storage lifecycle", "variable \"retention_days\" {", "  type    = map(number)   # keyed by territory, generated from the schedule", "  default = { gb = 2190, de = 3650 }", "}", "", "resource \"aws_s3_bucket_lifecycle_configuration\" \"records\" {", "  bucket = aws_s3_bucket.records.id", "  rule {", "    id     = \"retention-${var.territory}\"", "    status = \"Enabled\"", "    expiration { days = var.retention_days[var.territory] }", "  }", "}"].join("\n"),
+  },
+  ret_delete: {
+    intent: "Deletion is executed and verified, with legal hold as the only sanctioned exception.",
+    enforce: ["Deletion jobs run from the schedule with completion verification", "Legal hold flag suspends deletion with a case reference", "Destruction certificates for physical and third-party media"],
+    evidence: "Deletion job logs and the hold register",
+  },
+  ret_archive: {
+    intent: "Backups expire in line with the schedule, and restores do not resurrect deleted data.",
+    enforce: ["Backup retention configured from the same schedule source as live storage", "Restore runbook includes a deletion replay step", "Object Lock applied only where a legal basis requires immutability"],
+    evidence: "Backup expiry configuration export",
+  },
+  ai_inv: {
+    intent: "No model reaches production unrecorded; risk screening happens at intake, not after launch.",
+    enforce: ["Model registry entry required by the deployment pipeline", "Intake questionnaire assigns a risk class", "Material change triggers re-screening"],
+    evidence: "Registry export with risk classes and screening dates",
+  },
+  ai_human: {
+    intent: "Rider-affecting decisions carry a human route with authority to overturn, configured per market.",
+    enforce: ["Escalation workflow with overturn permission in rider operations tooling", "Oversight configuration keyed by territory", "Overturn rates monitored and reported"],
+    evidence: "Oversight metrics per market with case samples",
+  },
+  ai_ms: {
+    intent: "AI governance runs as a management system: policy, roles, review, and readiness for conformity.",
+    enforce: ["Policy and role assignments held in the governance repository", "Management review on a fixed cadence with minutes", "Readiness assessment against the management system standard"],
+    evidence: "Management review minutes and internal audit results",
+  },
+  pay_scope: {
+    intent: "Cardholder data never enters group systems; scope is minimised and the minimisation is proven.",
+    enforce: ["Payment provider tokenisation and hosted payment fields", "Segmentation validated by scheduled scanning", "AWS Config flags storage tagged as adjacent to the cardholder environment"],
+    evidence: "Scope definition and segmentation test results",
+  },
+  pay_sca: {
+    intent: "Strong customer authentication applies per regime, with exemptions used deliberately and watched.",
+    enforce: ["Provider authentication configuration per market", "Exemption strategy documented with thresholds", "Fraud rates monitored against exemption use"],
+    evidence: "Authentication configuration export and fraud reporting",
+  },
+  pay_inst: {
+    intent: "Safeguarding and authorisation conditions are evidenced continuously rather than annually reconstructed.",
+    enforce: ["Safeguarding account reconciliation automated daily", "Regulatory reporting calendar with named owners", "Authorisation condition register mapped to operating controls"],
+    evidence: "Reconciliation records and submitted returns",
+  },
+  res_plan: {
+    intent: "Continuity objectives derive from business impact analysis, including third-party dependencies.",
+    enforce: ["Impact analysis maintained with recovery objectives per service", "Dependency map covers suppliers and cloud regions", "Plans in version control with named owners"],
+    evidence: "Current impact analysis and plan review dates",
+  },
+  res_test: {
+    intent: "Recovery is proven by exercise, not asserted in a document.",
+    enforce: ["Component failover tests scheduled by service tier", "Game days for critical services", "Results tracked with remediation actions"],
+    evidence: "Test reports scored against recovery objectives",
+  },
+  res_tlpt: {
+    intent: "Severe scenarios and threat-led testing validate the whole chain end to end.",
+    enforce: ["Annual severe-but-plausible scenario exercise", "Threat-led penetration testing scoped on critical functions", "Findings tracked to closure with board visibility"],
+    evidence: "Test scope, findings and closure evidence",
+  },
+  fin_scope: {
+    intent: "Systems feeding the financial statements are identified and mapped to assertions before anyone audits them.",
+    enforce: ["Scoping inventory refreshed on architectural change", "Control-to-assertion mapping maintained jointly with finance", "Material change triggers a scoping review"],
+    evidence: "Scoping memo and the system inventory",
+  },
+  fin_op: {
+    intent: "Financial reporting ITGC operates with evidence captured at execution, never reconstructed.",
+    enforce: ["Access and change controls on in-scope systems monitored continuously", "Evidence captured by the pipeline and tooling at the moment of execution", "Exception log with remediation owners and dates"],
+    evidence: "Control execution evidence and the exception register",
+  },
+  fin_test: {
+    intent: "ITGC effectiveness is independently tested on a defined cycle with findings tracked.",
+    enforce: ["Internal audit test plan aligned to the scoping inventory", "Continuous monitoring on key control indicators", "Findings carry management responses and closure dates"],
+    evidence: "Test workpapers and the findings register",
+  },
+  tr_mech: {
+    intent: "No cross-border transfer without a valid mechanism on record and a renewal date being watched.",
+    enforce: ["Transfer register linking each flow to its mechanism", "Standard clauses and the UK addendum built into contract templates", "Renewal dates tracked with alerts"],
+    evidence: "Transfer register export with mechanism references",
+  },
+  tr_local: {
+    intent: "Data that must stay in-country does, enforced at the platform rather than by policy memo.",
+    enforce: ["Allowed-regions service control policy per territory requirement", "Terraform module pins storage location by data class and territory", "AWS Config flags resources created outside permitted regions"],
+    evidence: "Region policy export and drift findings",
+    snippet: ["# Illustrative: residency pin as a service control policy statement", "{", "  \"Sid\": \"ResidencyPin\",", "  \"Effect\": \"Deny\",", "  \"NotAction\": [\"iam:*\", \"organizations:*\", \"route53:*\", \"cloudfront:*\"],", "  \"Resource\": \"*\",", "  \"Condition\": {", "    \"StringNotEquals\": { \"aws:RequestedRegion\": [\"eu-central-1\", \"eu-west-1\"] }", "  }", "}"].join("\n"),
+  },
+  tr_tia: {
+    intent: "Third-country routes are risk-assessed before go-live and reassessed on defined triggers.",
+    enforce: ["Assessment template and register per route", "Adequacy watch list with reassessment triggers", "High-risk routes escalate before launch"],
+    evidence: "Assessment register with dates and outcomes",
+  },
+  trn_base: {
+    intent: "Everyone completes baseline training; completion is enforced by systems, not chased by email.",
+    enforce: ["Learning platform assigns on joining and annually", "Non-completion surfaces in access review", "Completion state feeds manager reporting"],
+    evidence: "Completion rates by population",
+  },
+  trn_role: {
+    intent: "Payments, privacy and AI roles hold role-specific competence that refreshes when the rules change.",
+    enforce: ["Role-to-curriculum mapping in the learning platform", "Competence assessed at completion, not just attended", "Regulatory change triggers a refresh"],
+    evidence: "Role training records and assessment results",
+  },
+  trn_measure: {
+    intent: "Training effect is measured by behaviour, not attendance.",
+    enforce: ["Phishing simulation programme with trend tracking", "Outcome metrics feed risk reporting", "Content revised on observed failure patterns"],
+    evidence: "Behavioural test results over time",
+  },
+  inv_asset: {
+    intent: "Every asset is discovered, owned and recorded automatically; unowned resources are an alarm.",
+    enforce: ["Cloud resources auto-registered through the Config aggregator", "Kubernetes workloads labelled with owner and service", "Unowned-resource reporting drives cleanup"],
+    evidence: "Inventory coverage against the discovered estate",
+  },
+  inv_data: {
+    intent: "Data stores are mapped and classified, with lineage for personal data.",
+    enforce: ["Data catalogue with classification tags", "Schema-level tagging for personal data", "New store creation requires classification before use"],
+    evidence: "Catalogue export with classification coverage",
+  },
+  inv_link: {
+    intent: "The inventory drives control scope: retention, residency and reviews configure from it, not from spreadsheets.",
+    enforce: ["Retention and residency rules generated from catalogue tags", "Control scoping queries the inventory directly", "Drift between inventory and enforcement is reported"],
+    evidence: "Generated configuration diffs against inventory state",
+  },
+};
 
 /* ---------------------------- resolution --------------------------- */
 
@@ -2205,6 +2436,115 @@ function ChangeView({
   );
 }
 
+/* --------------------------- design view ---------------------------- */
+
+function DesignView({ selection, controlSelections, assuranceSelections, territoryOverrides }) {
+  if (selection.size === 0) {
+    return (
+      <p style={{ fontFamily: SERIF, fontSize: 14, color: C.inkSoft }}>
+        Select territories and set controls first. Control design renders the selected control set
+        as engineer-facing guardrails.
+      </p>
+    );
+  }
+  const groups = CONTROL_DOMAINS
+    .map((d) => ({ domain: d, list: d.controls.filter((c) => controlSelections[c.id]) }))
+    .filter((g) => g.list.length > 0);
+  if (groups.length === 0) {
+    return (
+      <p style={{ fontFamily: SERIF, fontSize: 14, color: C.inkSoft }}>
+        No controls are set. Choose implementation options on the Controls view; this view then
+        translates each chosen control into a guardrail an engineering team can implement.
+      </p>
+    );
+  }
+  return (
+    <div style={{ maxWidth: 900 }}>
+      <p style={{ fontFamily: SERIF, fontSize: 14, color: C.ink, margin: "0 0 4px", lineHeight: 1.5 }}>
+        The selected control set, restated as policy-as-code guardrails: what is enforced, where it
+        is enforced, and what evidence the enforcement emits. Implementation level sets the posture;
+        assurance depth sets how the evidence is captured.
+      </p>
+      <p style={{ fontFamily: SERIF, fontSize: 12.5, color: C.inkSoft, margin: "0 0 14px", lineHeight: 1.5 }}>
+        Enforcement points reference an illustrative stack: {REFERENCE_STACK}. It is representative
+        for demonstration, not a statement about any organisation's environment. Configuration
+        sketches are illustrative and need engineering review before use.
+      </p>
+      {groups.map(({ domain, list }) => (
+        <section key={domain.id} style={{ marginBottom: 14 }}>
+          <h2 style={{ fontFamily: SERIF, fontSize: 16.5, fontWeight: 700, color: C.ink, margin: "0 0 6px" }}>
+            {domain.name}
+          </h2>
+          {list.map((control) => {
+            const level = controlSelections[control.id];
+            const assurance = assuranceSelections[control.id] || 2;
+            const overrides = territoryOverrides[control.id] || {};
+            const ovEntries = Object.entries(overrides).filter(([t]) => selection.has(t));
+            const d = CONTROL_DESIGN[control.id];
+            const moduleStrategy = ovEntries.length > 0
+              ? `Parameterised module with per-territory variable maps. Variants: ${ovEntries
+                  .map(([t, l]) => `${J_BY_ID[t].code} option ${l}`).join(", ")}; all other territories follow the group option.`
+              : control.local
+                ? "Parameter-ready module: accepts per-territory variable maps, currently uniform across the selection."
+                : "One group-wide module, applied identically in every territory.";
+            return (
+              <div key={control.id} style={{
+                background: C.paper, border: `1px solid ${C.sheetDeep}`, borderRadius: 3,
+                padding: "10px 13px", marginBottom: 8,
+              }}>
+                <div style={{ display: "flex", flexWrap: "wrap", gap: 7, alignItems: "center" }}>
+                  <span style={{ fontFamily: SERIF, fontSize: 14, fontWeight: 700, color: C.ink }}>{control.name}</span>
+                  {control.local && <Pill text="local by design" colour={C.exposure} />}
+                  <span style={{ fontFamily: MONO, fontSize: 10, color: C.paper, background: C.ink, borderRadius: 2, padding: "2px 7px" }}>
+                    Option {level}: {control.options[level - 1].label}
+                  </span>
+                  <span style={{ fontFamily: MONO, fontSize: 10, color: C.paper, background: C.frame, borderRadius: 2, padding: "2px 7px" }}>
+                    A{assurance} {ASSURANCE_LABELS[assurance - 1]}
+                  </span>
+                </div>
+                <p style={{ fontFamily: SERIF, fontSize: 13, color: C.ink, margin: "7px 0 6px", lineHeight: 1.45 }}>
+                  {d.intent}
+                </p>
+                <div style={{ fontFamily: MONO, fontSize: 10, letterSpacing: 0.6, textTransform: "uppercase", color: C.inkSoft, marginBottom: 2 }}>
+                  Enforcement points
+                </div>
+                {d.enforce.map((e, i) => (
+                  <p key={i} style={{ fontFamily: MONO, fontSize: 10.5, color: C.ink, margin: "0 0 2px", lineHeight: 1.5 }}>
+                    · {e}
+                  </p>
+                ))}
+                <p style={{ fontFamily: MONO, fontSize: 10.5, color: C.inkSoft, margin: "6px 0 0", lineHeight: 1.55 }}>
+                  posture: {POSTURES[level - 1]}
+                </p>
+                <p style={{ fontFamily: MONO, fontSize: 10.5, color: C.inkSoft, margin: "1px 0 0", lineHeight: 1.55 }}>
+                  evidence: {d.evidence}, {EVIDENCE_MODES[assurance - 1]}
+                </p>
+                <p style={{ fontFamily: SERIF, fontSize: 12, color: C.exposure, margin: "6px 0 0", lineHeight: 1.45 }}>
+                  {moduleStrategy}
+                </p>
+                {d.snippet && (
+                  <div style={{ marginTop: 7 }}>
+                    <div style={{ fontFamily: MONO, fontSize: 9.5, letterSpacing: 0.6, textTransform: "uppercase", color: C.inkSoft, marginBottom: 3 }}>
+                      Illustrative configuration sketch
+                    </div>
+                    <pre style={{
+                      fontFamily: MONO, fontSize: 10, background: C.sheet, color: C.ink,
+                      border: `1px solid ${C.sheetDeep}`, borderRadius: 3, padding: "8px 10px",
+                      margin: 0, overflowX: "auto", lineHeight: 1.55, whiteSpace: "pre",
+                    }}>
+                      {d.snippet}
+                    </pre>
+                  </div>
+                )}
+              </div>
+            );
+          })}
+        </section>
+      ))}
+    </div>
+  );
+}
+
 /* ------------------------------- footer ----------------------------- */
 
 function Footer() {
@@ -2228,6 +2568,7 @@ const TABS = [
   { id: "controls", label: "Controls" },
   { id: "harmonisation", label: "Harmonisation" },
   { id: "change", label: "Change impact" },
+  { id: "design", label: "Control design" },
 ];
 
 export default function ControlHarmonisationSimulator() {
@@ -2326,6 +2667,14 @@ export default function ControlHarmonisationSimulator() {
             territoryOverrides={territoryOverrides}
             changeScenario={changeScenario}
             setChangeScenario={setChangeScenario}
+          />
+        )}
+        {tab === "design" && (
+          <DesignView
+            selection={selection}
+            controlSelections={controlSelections}
+            assuranceSelections={assuranceSelections}
+            territoryOverrides={territoryOverrides}
           />
         )}
       </main>

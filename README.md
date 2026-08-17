@@ -12,7 +12,7 @@ But total harmonisation is a design failure, not an achievement. Some obligation
 
 The tool therefore scores harmonisation against an **efficient band** rather than rewarding maximisation. Below the band, effort duplicates across markets with no legal driver. Above it, obligations that are local by design have been standardised away. Six controls in the model are marked local by design and accept per-territory variants; variation anywhere else is flagged as cost without a legal driver.
 
-## The five views
+## The six views
 
 ### 1. Territory selection
 
@@ -99,6 +99,14 @@ A before and after diff against the live selection and control set, for three ki
 
 The view states explicitly which existing controls absorb a change unchanged. That is the harmonisation dividend made visible: run a mature uniform control set, apply a version uplift, and the surplus evidence already in the system absorbs it with no score movement. Run a weaker set and the same change opens a gap.
 
+### 6. Control design
+
+The selected control set restated for the people who will implement it: policy-as-code guardrails in the spirit of infrastructure-as-code guardrails. Each selected control renders as a card with the guardrail intent in plain terms, enforcement points on an illustrative reference stack (AWS, Cloudflare, GitHub with CI, Kubernetes, Terraform with OPA policy checks, an identity provider, a SIEM, and a payment service provider), and the evidence artefact the enforcement emits.
+
+The two control axes map directly onto engineering reality. Implementation level sets the enforcement posture: documented, detective, preventive, or automated with evidence emission. Assurance depth sets how the evidence is captured, from self-declared attestation through to pipeline-exported audit artefacts. Harmonisation state maps onto module strategy: a uniform control is one group-wide module, a control with local variants is a parameterised module with per-territory variable maps, with the overriding territories listed. Three controls carry short illustrative configuration sketches (a retention schedule rendered into storage lifecycle rules, a residency pin as a service control policy, and a pipeline policy check over a Terraform plan), each marked as needing engineering review before use.
+
+The reference stack is representative for demonstration and is stated as such in the interface; it is not a claim about any organisation's environment.
+
 ## Running it
 
 Designed for GitHub Pages or any static web server. No build step, no bundler, no package installation.
@@ -126,3 +134,5 @@ Data invariants are enforced rather than assumed. Every option ladder is monoton
 All data in this tool is authored and illustrative. Scores are a model, not an audit. Scenarios are not statements about any organisation's internal programme. Items marked verify must be checked against primary sources before being relied on.
 
 Regulatory content is representative rather than exhaustive, and accuracy was preferred over coverage. References use plain instrument names; registration numbers, licence numbers and article numbers are not asserted where they could not be confirmed. Evidence weights are authored judgement rather than a clause-level crosswalk: the model asserts that an option helps evidence an obligation, not which specific article it satisfies.
+
+No licence file is included. Add one before inviting reuse.
