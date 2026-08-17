@@ -119,16 +119,6 @@ Opening `index.html` directly from disk will not work: browsers block the fetch 
 
 To use the component inside an existing React project instead, import the default export from `control-harmonisation-simulator.jsx`. It takes no required props.
 
-## Technical notes
-
-The application is one `.jsx` file of roughly 2,300 lines: React 18, hooks only, a default export, inline styles. All state is in memory; there is no localStorage, sessionStorage, backend, or external fetch at runtime beyond the initial module loads.
-
-The world geometry is Natural Earth data (110m countries, with two territories taken from 50m for legibility, plus 110m US admin1 boundaries and Canadian provincial boundaries), simplified, quantised and embedded in the file with an in-file topology decoder rather than a topojson dependency. Polygon winding is corrected per ring to satisfy d3's spherical convention. Territories below a projected area threshold are given automatic markers.
-
-Interactive elements are keyboard focusable with aria labels and pressed states; reduced-motion preferences are respected. The visual register is deliberately a calm technical drafting plate rather than a dashboard: muted palette, monospace for identifiers, serif for explanatory prose.
-
-Data invariants are enforced rather than assumed. Every option ladder is monotonic, so strengthening a control never reduces the evidence it contributes. Every obligation is attainable at full implementation and assurance. The uniform score curve is tuned so each maturity tier is visibly distinct, landing at approximately 4, 36, 84 and 100 per cent when every control is set to option 1, 2, 3 and 4 with matching assurance.
-
 ## Data and disclaimers
 
 All data in this tool is authored and illustrative. Scores are a model, not an audit. Scenarios are not statements about any organisation's internal programme. Items marked verify must be checked against primary sources before being relied on.
